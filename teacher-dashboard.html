@@ -6,6 +6,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDeLqOuca8tge4tOpgD7LKPIFubLew6ljQ",
   authDomain: "attendance-management-sy-da7cd.firebaseapp.com",
@@ -17,6 +18,7 @@ const firebaseConfig = {
   measurementId: "G-H6R4YFBNMB"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -26,68 +28,95 @@ document.addEventListener("DOMContentLoaded",()=>{
     loadSubmittedStudents();
 });
 
+// Limit 2 code generations per login
 let generateCount = 0;
 
+// Generate 6-digit code
 window.generateCode = function(){
-    if(generateCount>=2){
+    if(generateCount >= 2){
         alert("Max 2 codes per login");
         return;
     }
+
     let code = Math.floor(Math.random()*900000)+100000;
     document.getElementById("result").innerText = "6-Digit Code: "+code;
 
+    // Store current code in Firebase
     set(ref(db,"currentCode"),{
         code: code,
         timestamp: Date.now()
     });
 
+    // Disable button for 20 seconds
     let btn = document.getElementById("codeBtn");
-    btn.disabled=true;
-    let t=20;
-    btn.innerText=`Wait ${t}s`;
+    btn.disabled = true;
+    let t = 20;
+    btn.innerText = `Wait ${t}s`;
+
     let interval = setInterval(()=>{
         t--;
-        btn.innerText=`Wait ${t}s`;
-        if(t<=0){
+        btn.innerText = `Wait ${t}s`;
+        if(t <= 0){
             clearInterval(interval);
-            btn.disabled=false;
-            btn.innerText=(generateCount>=2)?"Limit Reached":"Generate 6-Digit Code";
-            document.getElementById("result").innerText="Code Expired";
-            set(ref(db,"currentCode"),{ code:null, timestamp:null });
+            btn.disabled = false;
+            btn.innerText = (generateCount >= 2)?"Limit Reached":"Generate 6-Digit Code";
+            document.getElementById("result").innerText = "Code Expired";
+
+            // Clear current code in Firebase
+            set(ref(db,"currentCode"),{ code: null, timestamp: null });
         }
     },1000);
 
     generateCount++;
-    if(generateCount>=2) btn.disabled=true;
+    if(generateCount >= 2) btn.disabled = true;
 }
 
+// Show only students who submitted attendance
 function loadSubmittedStudents() {
     const submittedRef = ref(db, "attendance");
     onValue(submittedRef, (snapshot) => {
         const ul = document.getElementById("submittedList");
         ul.innerHTML = "";
-        if(!snapshot.exists()){
-            ul.innerHTML = "<li>No submissions yet</li>";
+
+        if (!snapshot.exists()) {
+            ul.innerHTML = "<li>No students have submitted attendance yet</li>";
             return;
         }
-        snapshot.forEach(child=>{
-            const li=document.createElement("li");
-            li.innerText = child.key + " : " + child.val();
-            ul.appendChild(li);
+
+        let presentCount = 0;
+
+        snapshot.forEach((childSnapshot) => {
+            const studentRoll = childSnapshot.key;
+            const status = childSnapshot.val();
+            
+            if(status === "Present") {
+                const li = document.createElement("li");
+                li.innerText = `${studentRoll} : ${status}`;
+                ul.appendChild(li);
+                presentCount++;
+            }
         });
+
+        if(presentCount === 0){
+            ul.innerHTML = "<li>No students have submitted attendance yet</li>";
+        }
     });
 }
 
+// Demo QR code generation
 window.generateQRCode = function(){
     let qrData = "ATTENDANCE|"+Date.now();
     document.getElementById("result").innerText = "QR Code Generated (demo): "+qrData;
 }
 </script>
 <style>
-body{ font-family: Arial; padding:20px; }
-button{ padding:10px 20px; margin:10px 0; border:none; background:black; color:white; cursor:pointer; border-radius:4px; font-size:16px; }
+body{ font-family: Arial; padding:20px; background:#f4f4f4; }
+button{ padding:10px 20px; margin:10px 0; border:none; background:#000DFF; color:white; cursor:pointer; border-radius:4px; font-size:16px; transition:0.3s; }
+button:hover{ background:#6B73FF; }
 button:disabled{ background:#aaa; cursor:not-allowed; }
 #result{ margin-top:15px; font-size:18px; font-weight:bold; color:#222; }
+ul{ list-style:none; padding-left:0; }
+ul li{ background:#fff; margin:5px 0; padding:8px 12px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 </style>
 </head>
 <body>
@@ -100,6 +129,9 @@ button:disabled{ background:#aaa; cursor:not-allowed; }
 <p id="result"></p>
 
 <h3>Students Submitted Attendance:</h3>
-<ul id="submittedList"></ul>
+<ul id="submittedList">
+    <li>Loading...</li>
+</ul>
+
 </body>
 </html>
