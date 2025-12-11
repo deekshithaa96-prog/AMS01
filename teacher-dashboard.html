@@ -48,7 +48,7 @@ function disableButtonsFor20Sec(btn) {
             codeBtn.disabled = false;
             qrBtn.disabled = false;
             btn.innerText = (generateCount >= 2 && btn.id==="codeBtn")?"Limit Reached":(btn.id==="codeBtn"?"Generate 6-Digit Code":"Generate QR Code");
-            document.getElementById("result").innerText = btn.id==="codeBtn"?"Code Expired":"QR Code Expired";
+            document.getElementById("result").innerHTML = btn.id==="codeBtn"?"Code Expired":"QR Code Expired";
         }
     },1000);
 }
@@ -61,7 +61,7 @@ window.generateCode = function(){
     }
 
     let code = Math.floor(Math.random()*900000)+100000;
-    document.getElementById("result").innerText = "6-Digit Code: "+code;
+    document.getElementById("result").innerHTML = "6-Digit Code: "+code;
 
     // Store in Firebase
     set(ref(db,"currentCode"),{ code: code, timestamp: Date.now() });
@@ -72,10 +72,18 @@ window.generateCode = function(){
     if(generateCount >= 2) document.getElementById("codeBtn").disabled = true;
 }
 
-// Generate QR code (demo)
+// Generate QR code as an image
 window.generateQRCode = function(){
     let qrData = "QR-" + Math.floor(Math.random()*1000000);
-    document.getElementById("result").innerText = "QR Code Generated: "+qrData;
+
+    // Clear previous QR
+    document.getElementById("result").innerHTML = "";
+
+    // Create QR code image using Google Chart API
+    const qrImg = document.createElement("img");
+    qrImg.src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${qrData}`;
+    qrImg.alt = "QR Code";
+    document.getElementById("result").appendChild(qrImg);
 
     disableButtonsFor20Sec(document.getElementById("qrBtn"));
 }
@@ -129,6 +137,7 @@ ul{ list-style:none; padding-left:0; }
 ul li{ background:#fff; margin:5px 0; padding:8px 12px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
 ul li button{ margin-left:10px; padding:4px 8px; background:red; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
 ul li button:hover{ background:#ff4d4d; }
+img{ margin-top:10px; }
 </style>
 </head>
 <body>
@@ -138,7 +147,7 @@ ul li button:hover{ background:#ff4d4d; }
 <button id="codeBtn" onclick="generateCode()">Generate 6-Digit Code</button>
 <button id="qrBtn" onclick="generateQRCode()">Generate QR Code</button>
 
-<p id="result"></p>
+<div id="result"></div>
 
 <h3>Students Submitted Attendance:</h3>
 <ul id="submittedList">
