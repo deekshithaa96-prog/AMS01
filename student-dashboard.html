@@ -2,72 +2,72 @@
 <html>
 <head>
 <title>Student Dashboard</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDeLqOuca8tge4tOpgD7LKPIFubLew6ljQ",
+  authDomain: "attendance-management-sy-da7cd.firebaseapp.com",
+  databaseURL: "https://attendance-management-sy-da7cd-default-rtdb.firebaseio.com",
+  projectId: "attendance-management-sy-da7cd",
+  storageBucket: "attendance-management-sy-da7cd.firebasestorage.app",
+  messagingSenderId: "222467905728",
+  appId: "1:222467905728:web:e3a6b729c7d8b813497525",
+  measurementId: "G-H6R4YFBNMB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let rollNo = localStorage.getItem("roll_number");
+document.addEventListener("DOMContentLoaded",()=>{
+    document.getElementById("roll").innerText = rollNo;
+    document.getElementById("codeSection").style.display="block";
+});
+
+window.submitCode = function(){
+    let enteredCode = document.getElementById("studentCode").value;
+    get(ref(db,"currentCode")).then(snap=>{
+        if(!snap.exists() || snap.val().code==null){
+            document.getElementById("error").innerText="No valid code available or expired";
+            return;
+        }
+        let validCode = snap.val().code.toString();
+        if(enteredCode===validCode){
+            document.getElementById("message").innerText="Attendance submitted!";
+            document.getElementById("error").innerText="";
+            document.getElementById("studentCode").disabled=true;
+            document.getElementById("submitBtn").disabled=true;
+            set(ref(db,"attendance/"+rollNo),"Present");
+        } else {
+            document.getElementById("error").innerText="Invalid Code!";
+            document.getElementById("message").innerText="";
+        }
+    });
+}
+</script>
 <style>
 body{ font-family: Arial; padding:20px; }
 input, button{ padding:8px; margin:8px 0; border-radius:4px; border:1px solid #ccc; }
 button{ background:black; color:white; cursor:pointer; }
-button:disabled, input:disabled{ background:#eee; cursor:not-allowed; }
+button:disabled,input:disabled{ background:#eee; cursor:not-allowed; }
 #message{ margin-top:15px; font-weight:bold; color:green; }
 #error{ color:red; }
 </style>
 </head>
 <body>
-
 <h2>Welcome Student</h2>
 <p><b>Your Roll Number:</b> <span id="roll"></span></p>
 
-<div id="codeSection" style="display:none;">
-    <label>Enter 6-Digit Code:</label><br>
-    <input type="text" id="studentCode" maxlength="6" placeholder="Enter Code">
-    <button id="submitBtn" onclick="submitCode()">Submit</button>
+<div id="codeSection">
+<label>Enter 6-Digit Code:</label><br>
+<input type="text" id="studentCode" maxlength="6" placeholder="Enter Code">
+<button id="submitBtn" onclick="submitCode()">Submit</button>
 </div>
 
 <p id="message"></p>
 <p id="error"></p>
-
-<script>
-let rollNo = localStorage.getItem("roll_number");
-document.getElementById("roll").innerText = rollNo;
-
-function checkCodeAvailability(){
-    let validCode = localStorage.getItem("attendance_code");
-    let alreadySubmitted = localStorage.getItem("attendance_" + rollNo) === "Present";
-
-    if(validCode && !alreadySubmitted){
-        document.getElementById("codeSection").style.display = "block";
-    } 
-    else if(alreadySubmitted){
-        document.getElementById("message").innerText = "Attendance already submitted!";
-        document.getElementById("codeSection").style.display = "block";
-        document.getElementById("studentCode").disabled = true;
-        document.getElementById("submitBtn").disabled = true;
-    }
-}
-checkCodeAvailability();
-
-function submitCode(){
-    let enteredCode = document.getElementById("studentCode").value;
-    let validCode = localStorage.getItem("attendance_code");
-
-    if(!validCode){
-        document.getElementById("error").innerText = "No valid code available or it has expired.";
-        return;
-    }
-
-    if(enteredCode === validCode){
-        document.getElementById("message").innerText = "Attendance submitted!";
-        document.getElementById("error").innerText = "";
-        localStorage.setItem("attendance_" + rollNo, "Present");
-
-        // disable input and button
-        document.getElementById("studentCode").disabled = true;
-        document.getElementById("submitBtn").disabled = true;
-    } else {
-        document.getElementById("error").innerText = "Invalid Code!";
-        document.getElementById("message").innerText = "";
-    }
-}
-</script>
 
 </body>
 </html>
