@@ -61,11 +61,15 @@ window.generateCode = function(){
     if(generateCount>=2) btn.disabled=true;
 }
 
-window.loadSubmittedStudents = function(){
-    const submittedRef = ref(db,"attendance");
-    onValue(submittedRef,(snapshot)=>{
+function loadSubmittedStudents() {
+    const submittedRef = ref(db, "attendance");
+    onValue(submittedRef, (snapshot) => {
         const ul = document.getElementById("submittedList");
-        ul.innerHTML="";
+        ul.innerHTML = "";
+        if(!snapshot.exists()){
+            ul.innerHTML = "<li>No submissions yet</li>";
+            return;
+        }
         snapshot.forEach(child=>{
             const li=document.createElement("li");
             li.innerText = child.key + " : " + child.val();
@@ -97,6 +101,5 @@ button:disabled{ background:#aaa; cursor:not-allowed; }
 
 <h3>Students Submitted Attendance:</h3>
 <ul id="submittedList"></ul>
-
 </body>
 </html>
