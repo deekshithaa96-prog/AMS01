@@ -3,14 +3,14 @@
 <head>
 <title>Teacher Dashboard</title>
 
-<!-- Include QRCode.js library -->
+<!-- QR Code Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-// Firebase configuration
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDeLqOuca8tge4tOpgD7LKPIFubLew6ljQ",
   authDomain: "attendance-management-sy-da7cd.firebaseapp.com",
@@ -22,135 +22,208 @@ const firebaseConfig = {
   measurementId: "G-H6R4YFBNMB"
 };
 
-// Initialize Firebase
+// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let rollNo = localStorage.getItem("roll_number");
-document.addEventListener("DOMContentLoaded",()=>{
-    document.getElementById("roll").innerText = rollNo;
+// Show Teacher Roll
+document.addEventListener("DOMContentLoaded", ()=>{
+    document.getElementById("roll").innerText = localStorage.getItem("roll_number");
     loadSubmittedStudents();
 });
 
-// Limit 2 code generations per login
-let generateCount = 0;
+// Limits
+let pinCount = 0;
+let qrCount = 0;
 
 // Disable both buttons for 20 sec
-function disableButtonsFor20Sec(btn) {
-    let codeBtn = document.getElementById("codeBtn");
-    let qrBtn = document.getElementById("qrBtn");
+function disableFor20s(btn) {
+    const codeBtn = document.getElementById("codeBtn");
+    const qrBtn = document.getElementById("qrBtn");
+
     codeBtn.disabled = true;
     qrBtn.disabled = true;
+
     let t = 20;
     btn.innerText = `Wait ${t}s`;
 
-    let interval = setInterval(()=>{
+    const timer = setInterval(() => {
         t--;
         btn.innerText = `Wait ${t}s`;
-        if(t <= 0){
-            clearInterval(interval);
-            codeBtn.disabled = false;
-            qrBtn.disabled = false;
-            btn.innerText = (generateCount >= 2 && btn.id==="codeBtn")?"Limit Reached":(btn.id==="codeBtn"?"Generate 6-Digit Code":"Generate QR Code");
-            document.getElementById("result").innerText = btn.id==="codeBtn"?"Code Expired":"QR Code Expired";
+
+        if (t <= 0) {
+            clearInterval(timer);
+
+            // Re-enable
+            if (pinCount < 2) codeBtn.disabled = false;
+            if (qrCount < 2) qrBtn.disabled = false;
+
+            btn.innerText = btn.id === "codeBtn"
+                ? (pinCount >= 2 ? "Limit Reached" : "Generate 6-Digit Code")
+                : (qrCount >= 2 ? "Limit Reached" : "Generate QR Code");
+
+            document.getElementById("result").innerText =
+                btn.id === "codeBtn" ? "Code Expired" : "QR Code Expired";
+
+            // Expire QR visually
+            if (btn.id === "qrBtn") {
+                document.getElementById("qrcode").innerHTML = "";
+            }
         }
-    },1000);
+    }, 1000);
 }
 
-// Generate 6-digit code
-window.generateCode = function(){
-    if(generateCount >= 2){
-        alert("Max 2 codes per login");
+
+
+// ⭐ Generate 6-Digit Code
+window.generateCode = function() {
+    if (pinCount >= 2) {
+        alert("Limit reached (2 codes per login)");
         return;
     }
 
-    let code = Math.floor(Math.random()*900000)+100000;
-    document.getElementById("result").innerText = "6-Digit Code: "+code;
+    const code = Math.floor(Math.random() * 900000) + 100000;
+    document.getElementById("result").innerText = "6-Digit Code: " + code;
 
-    set(ref(db,"currentCode"),{ code: code, timestamp: Date.now() });
+    // Store in Firebase
+    set(ref(db, "currentCode"), { code: code, timestamp: Date.now() });
 
-    disableButtonsFor20Sec(document.getElementById("codeBtn"));
+    disableFor20s(document.getElementById("codeBtn"));
 
-    generateCount++;
-    if(generateCount >= 2) document.getElementById("codeBtn").disabled = true;
-}
+    pinCount++;
+    if (pinCount >= 2) document.getElementById("codeBtn").disabled = true;
+};
 
-// Generate QR code
-window.generateQRCode = function(){
-    let qrData = "ATTENDANCE|" + Math.floor(Math.random()*1000000);
 
-    // Clear previous QR code
+
+// ⭐ Generate QR Code (with limit 2)
+window.generateQRCode = function() {
+    if (qrCount >= 2) {
+        alert("QR Code limit reached (2 per login)");
+        return;
+    }
+
+    // Generate QR Data
+    const qrData = "QR|" + Math.floor(Math.random() * 1000000);
+
+    // Clear old QR
     document.getElementById("qrcode").innerHTML = "";
 
-    // Generate new QR code
+    // Make new QR
     new QRCode(document.getElementById("qrcode"), {
         text: qrData,
         width: 200,
         height: 200,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
     });
 
     document.getElementById("result").innerText = "QR Code Generated!";
-    disableButtonsFor20Sec(document.getElementById("qrBtn"));
-}
 
-// Load submitted students with Remove button
+    disableFor20s(document.getElementById("qrBtn"));
+
+    qrCount++;
+    if (qrCount >= 2) document.getElementById("qrBtn").disabled = true;
+};
+
+
+
+// ⭐ Load Present Students
 function loadSubmittedStudents() {
-    const submittedRef = ref(db, "attendance");
-    onValue(submittedRef, (snapshot) => {
+    const listRef = ref(db, "attendance");
+
+    onValue(listRef, (snapshot) => {
         const ul = document.getElementById("submittedList");
         ul.innerHTML = "";
 
         if (!snapshot.exists()) {
-            ul.innerHTML = "<li>No students have submitted attendance yet</li>";
+            ul.innerHTML = "<li>No students submitted yet</li>";
             return;
         }
 
-        let presentCount = 0;
+        let count = 0;
 
-        snapshot.forEach((childSnapshot) => {
-            const studentRoll = childSnapshot.key;
-            const status = childSnapshot.val();
+        snapshot.forEach((child) => {
+            const roll = child.key;
+            const status = child.val();
 
-            if(status === "Present") {
+            if (status === "Present") {
                 const li = document.createElement("li");
-                li.innerHTML = `${studentRoll} : ${status} <button onclick="removeStudent('${studentRoll}')">Remove</button>`;
+                li.innerHTML = `
+                    ${roll} - Present
+                    <button onclick="removeStudent('${roll}')">Remove</button>
+                `;
                 ul.appendChild(li);
-                presentCount++;
+                count++;
             }
         });
 
-        if(presentCount === 0){
-            ul.innerHTML = "<li>No students have submitted attendance yet</li>";
+        if (count === 0) {
+            ul.innerHTML = "<li>No students submitted yet</li>";
         }
     });
 }
 
-// Remove student from attendance
-window.removeStudent = function(studentRoll){
-    if(confirm(`Remove ${studentRoll} from attendance?`)){
-        remove(ref(db,"attendance/"+studentRoll));
+
+
+// ⭐ Remove student
+window.removeStudent = function(roll){
+    if (confirm("Remove " + roll + "?")) {
+        remove(ref(db, "attendance/" + roll));
     }
-}
+};
+
 </script>
+
 <style>
-body{ font-family: Arial; padding:20px; background:#f4f4f4; }
-button{ padding:10px 20px; margin:10px 0; border:none; background:#000DFF; color:white; cursor:pointer; border-radius:4px; font-size:16px; transition:0.3s; }
-button:hover{ background:#6B73FF; }
-button:disabled{ background:#aaa; cursor:not-allowed; }
-#result{ margin-top:15px; font-size:18px; font-weight:bold; color:#222; }
-ul{ list-style:none; padding-left:0; }
-ul li{ background:#fff; margin:5px 0; padding:8px 12px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:space-between; }
-ul li button{ margin-left:10px; padding:4px 8px; background:red; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
-ul li button:hover{ background:#ff4d4d; }
-#qrcode{ margin-top:15px; }
+body {
+    font-family: Arial;
+    background: #f4f4f4;
+    padding: 20px;
+}
+button {
+    padding: 10px 20px;
+    margin: 10px 0;
+    background: #000DFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover { background: #6B73FF; }
+button:disabled { background: #999; cursor: not-allowed; }
+
+#qrcode { margin-top: 15px; }
+
+#result {
+    font-size: 18px;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+ul { padding: 0; list-style: none; }
+ul li {
+    background: white;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+}
+ul li button {
+    background: red;
+    padding: 5px 10px;
+    font-size: 12px;
+}
 </style>
 </head>
+
 <body>
+
 <h2>Welcome Teacher</h2>
-<p><b>Last Logged Roll Number:</b> <span id="roll"></span></p>
+<p><b>Logged Roll No:</b> <span id="roll"></span></p>
 
 <button id="codeBtn" onclick="generateCode()">Generate 6-Digit Code</button>
 <button id="qrBtn" onclick="generateQRCode()">Generate QR Code</button>
@@ -158,7 +231,7 @@ ul li button:hover{ background:#ff4d4d; }
 <p id="result"></p>
 <div id="qrcode"></div>
 
-<h3>Students Submitted Attendance:</h3>
+<h3>Present Students:</h3>
 <ul id="submittedList">
     <li>Loading...</li>
 </ul>
