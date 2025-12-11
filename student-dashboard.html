@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Student Dashboard</title>
+<style>
+body{ font-family: Arial; padding:20px; }
+input, button{ padding:8px; margin:8px 0; border-radius:4px; border:1px solid #ccc; }
+button{ background:black; color:white; cursor:pointer; }
+button:disabled, input:disabled{ background:#eee; cursor:not-allowed; }
+#message{ margin-top:15px; font-weight:bold; color:green; }
+#error{ color:red; }
+</style>
+</head>
+<body>
+
+<h2>Welcome Student</h2>
+<p><b>Your Roll Number:</b> <span id="roll"></span></p>
+
+<div id="codeSection" style="display:none;">
+    <label>Enter 6-Digit Code:</label><br>
+    <input type="text" id="studentCode" maxlength="6" placeholder="Enter Code">
+    <button id="submitBtn" onclick="submitCode()">Submit</button>
+</div>
+
+<p id="message"></p>
+<p id="error"></p>
+
+<script>
+let rollNo = localStorage.getItem("roll_number");
+document.getElementById("roll").innerText = rollNo;
+
+function checkCodeAvailability(){
+    let validCode = localStorage.getItem("attendance_code");
+    let alreadySubmitted = localStorage.getItem("attendance_" + rollNo) === "Present";
+
+    if(validCode && !alreadySubmitted){
+        document.getElementById("codeSection").style.display = "block";
+    } 
+    else if(alreadySubmitted){
+        document.getElementById("message").innerText = "Attendance already submitted!";
+        document.getElementById("codeSection").style.display = "block";
+        document.getElementById("studentCode").disabled = true;
+        document.getElementById("submitBtn").disabled = true;
+    }
+}
+checkCodeAvailability();
+
+function submitCode(){
+    let enteredCode = document.getElementById("studentCode").value;
+    let validCode = localStorage.getItem("attendance_code");
+
+    if(!validCode){
+        document.getElementById("error").innerText = "No valid code available or it has expired.";
+        return;
+    }
+
+    if(enteredCode === validCode){
+        document.getElementById("message").innerText = "Attendance submitted!";
+        document.getElementById("error").innerText = "";
+        localStorage.setItem("attendance_" + rollNo, "Present");
+
+        // disable input and button
+        document.getElementById("studentCode").disabled = true;
+        document.getElementById("submitBtn").disabled = true;
+    } else {
+        document.getElementById("error").innerText = "Invalid Code!";
+        document.getElementById("message").innerText = "";
+    }
+}
+</script>
+
+</body>
+</html>

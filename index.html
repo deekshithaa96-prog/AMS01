@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login</title>
+<style>
+/* Body and background */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #6B73FF, #000DFF);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* Login card */
+.login-box {
+    background: white;
+    padding: 30px 40px;
+    width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    text-align: center;
+}
+
+/* Heading */
+.login-box h2 {
+    margin-bottom: 25px;
+    color: #333;
+}
+
+/* Labels */
+.login-box label {
+    display: block;
+    text-align: left;
+    margin-top: 10px;
+    font-weight: 500;
+    color: #555;
+}
+
+/* Input fields */
+.login-box input[type="text"],
+.login-box input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.login-box input[type="text"]:focus,
+.login-box input[type="password"]:focus {
+    outline: none;
+    border-color: #000DFF;
+    box-shadow: 0 0 5px rgba(0, 13, 255, 0.3);
+}
+
+/* Radio buttons */
+.login-box .role-selection {
+    margin: 10px 0;
+    text-align: left;
+    font-size: 14px;
+}
+
+.login-box .role-selection input {
+    margin-right: 8px;
+}
+
+/* Button */
+.login-box button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border-radius: 8px;
+    border: none;
+    background: #000DFF;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-box button:hover {
+    background: #6B73FF;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+    .login-box {
+        width: 90%;
+        padding: 25px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Login</h2>
+
+    <div class="role-selection">
+        <input type="radio" name="role" value="student"> Student
+        <input type="radio" name="role" value="teacher"> Teacher
+    </div>
+
+    <label>Roll No / Reg No</label>
+    <input type="text" id="rollno" placeholder="Enter Roll / Reg No">
+
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Enter Password">
+
+    <button onclick="login()">Login</button>
+</div>
+
+<script>
+function login(){
+    let role = document.querySelector('input[name="role"]:checked');
+    let rollno = document.getElementById("rollno").value;
+    let pass = document.getElementById("password").value;
+
+    if(!role){ alert("Select Student or Teacher"); return; }
+    if(rollno==="" || pass===""){ alert("Enter all details"); return; }
+
+    localStorage.setItem("roll_number", rollno);
+
+    if(role.value==="student"){
+        window.location.href="student-dashboard.html";
+    } else {
+        window.location.href="teacher-dashboard.html";
+    }
+}
+</script>
+
+</body>
+</html>
