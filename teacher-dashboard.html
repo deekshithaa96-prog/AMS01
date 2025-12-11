@@ -2,6 +2,84 @@
 <html>
 <head>
 <title>Teacher Dashboard</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDeLqOuca8tge4tOpgD7LKPIFubLew6ljQ",
+  authDomain: "attendance-management-sy-da7cd.firebaseapp.com",
+  databaseURL: "https://attendance-management-sy-da7cd-default-rtdb.firebaseio.com",
+  projectId: "attendance-management-sy-da7cd",
+  storageBucket: "attendance-management-sy-da7cd.firebasestorage.app",
+  messagingSenderId: "222467905728",
+  appId: "1:222467905728:web:e3a6b729c7d8b813497525",
+  measurementId: "G-H6R4YFBNMB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let rollNo = localStorage.getItem("roll_number");
+document.addEventListener("DOMContentLoaded",()=>{
+    document.getElementById("roll").innerText = rollNo;
+    loadSubmittedStudents();
+});
+
+let generateCount = 0;
+
+window.generateCode = function(){
+    if(generateCount>=2){
+        alert("Max 2 codes per login");
+        return;
+    }
+    let code = Math.floor(Math.random()*900000)+100000;
+    document.getElementById("result").innerText = "6-Digit Code: "+code;
+
+    set(ref(db,"currentCode"),{
+        code: code,
+        timestamp: Date.now()
+    });
+
+    let btn = document.getElementById("codeBtn");
+    btn.disabled=true;
+    let t=20;
+    btn.innerText=`Wait ${t}s`;
+    let interval = setInterval(()=>{
+        t--;
+        btn.innerText=`Wait ${t}s`;
+        if(t<=0){
+            clearInterval(interval);
+            btn.disabled=false;
+            btn.innerText=(generateCount>=2)?"Limit Reached":"Generate 6-Digit Code";
+            document.getElementById("result").innerText="Code Expired";
+            set(ref(db,"currentCode"),{ code:null, timestamp:null });
+        }
+    },1000);
+
+    generateCount++;
+    if(generateCount>=2) btn.disabled=true;
+}
+
+window.loadSubmittedStudents = function(){
+    const submittedRef = ref(db,"attendance");
+    onValue(submittedRef,(snapshot)=>{
+        const ul = document.getElementById("submittedList");
+        ul.innerHTML="";
+        snapshot.forEach(child=>{
+            const li=document.createElement("li");
+            li.innerText = child.key + " : " + child.val();
+            ul.appendChild(li);
+        });
+    });
+}
+
+window.generateQRCode = function(){
+    let qrData = "ATTENDANCE|"+Date.now();
+    document.getElementById("result").innerText = "QR Code Generated (demo): "+qrData;
+}
+
+</script>
 <style>
 body{ font-family: Arial; padding:20px; }
 button{ padding:10px 20px; margin:10px 0; border:none; background:black; color:white; cursor:pointer; border-radius:4px; font-size:16px; }
@@ -10,7 +88,6 @@ button:disabled{ background:#aaa; cursor:not-allowed; }
 </style>
 </head>
 <body>
-
 <h2>Welcome Teacher</h2>
 <p><b>Last Logged Roll Number:</b> <span id="roll"></span></p>
 
@@ -18,88 +95,9 @@ button:disabled{ background:#aaa; cursor:not-allowed; }
 <button onclick="generateQRCode()">Generate QR Code</button>
 
 <p id="result"></p>
-<p id="limitInfo"></p>
 
 <h3>Students Submitted Attendance:</h3>
 <ul id="submittedList"></ul>
-
-<script>
-let rollNo = localStorage.getItem("roll_number");
-document.getElementById("roll").innerText = rollNo;
-
-let generateCountKey = "generate_count_" + rollNo;
-let generateCount = parseInt(localStorage.getItem(generateCountKey) || 0);
-updateLimitInfo();
-
-function generateCode(){
-    if(generateCount >= 2){
-        document.getElementById("result").innerText = "You have reached the maximum limit of code generation!";
-        return;
-    }
-
-    let code = Math.floor(Math.random()*900000)+100000;
-    document.getElementById("result").innerText = "6-Digit Code: " + code;
-
-    localStorage.setItem("attendance_code", code);
-    localStorage.setItem("code_time", Date.now());
-
-    let btn = document.getElementById("codeBtn");
-    btn.disabled = true;
-    let timeLeft = 20;
-    btn.innerText = `Wait ${timeLeft}s`;
-
-    let countdown = setInterval(()=>{
-        timeLeft--;
-        btn.innerText = `Wait ${timeLeft}s`;
-        if(timeLeft<=0){
-            clearInterval(countdown);
-            btn.disabled = false;
-            btn.innerText = (generateCount>=2) ? "Limit Reached" : "Generate 6-Digit Code";
-            document.getElementById("result").innerText = "Code Expired";
-            localStorage.removeItem("attendance_code");
-            localStorage.removeItem("code_time");
-        }
-    },1000);
-
-    generateCount++;
-    localStorage.setItem(generateCountKey, generateCount);
-    updateLimitInfo();
-    if(generateCount>=2){ btn.disabled=true; btn.innerText="Limit Reached"; }
-
-    // update student list periodically
-    setTimeout(showSubmittedStudents,1000);
-}
-
-function generateQRCode(){
-    let qrData = "ATTENDANCE|" + Date.now();
-    document.getElementById("result").innerText = "QR Code Generated (demo): " + qrData;
-    showSubmittedStudents();
-}
-
-function updateLimitInfo(){
-    document.getElementById("limitInfo").innerText = `Codes generated: ${generateCount} / 2`;
-}
-
-// Show list of students who submitted
-function showSubmittedStudents(){
-    let submittedList = document.getElementById("submittedList");
-    submittedList.innerHTML="";
-    for(let i=0;i<localStorage.length;i++){
-        let key = localStorage.key(i);
-        if(key.startsWith("attendance_")){
-            let roll = key.replace("attendance_","");
-            if(localStorage.getItem(key)==="Present"){
-                let li=document.createElement("li");
-                li.innerText=roll;
-                submittedList.appendChild(li);
-            }
-        }
-    }
-}
-
-// initial load
-showSubmittedStudents();
-</script>
 
 </body>
 </html>
