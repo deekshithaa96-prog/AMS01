@@ -47,28 +47,32 @@ window.generateCode = function(){
         timestamp: Date.now()
     });
 
-    // Disable button for 20 seconds
-    let btn = document.getElementById("codeBtn");
-    btn.disabled = true;
+    // Disable both buttons for 20 seconds
+    let codeBtn = document.getElementById("codeBtn");
+    let qrBtn = document.getElementById("qrBtn");
+    codeBtn.disabled = true;
+    qrBtn.disabled = true;
+
     let t = 20;
-    btn.innerText = `Wait ${t}s`;
+    codeBtn.innerText = `Wait ${t}s`;
 
     let interval = setInterval(()=>{
         t--;
-        btn.innerText = `Wait ${t}s`;
+        codeBtn.innerText = `Wait ${t}s`;
         if(t <= 0){
             clearInterval(interval);
-            btn.disabled = false;
-            btn.innerText = (generateCount >= 2)?"Limit Reached":"Generate 6-Digit Code";
+            codeBtn.disabled = false;
+            qrBtn.disabled = false;
+            codeBtn.innerText = (generateCount >= 2)?"Limit Reached":"Generate 6-Digit Code";
             document.getElementById("result").innerText = "Code Expired";
 
             // Clear current code in Firebase
-            set(ref(db,"currentCode"),{ code: null, timestamp: null });
+            set(ref(db,"currentCode"),{ code:null, timestamp:null });
         }
     },1000);
 
     generateCount++;
-    if(generateCount >= 2) btn.disabled = true;
+    if(generateCount >= 2) codeBtn.disabled = true;
 }
 
 // Show only students who submitted attendance
@@ -124,7 +128,7 @@ ul li{ background:#fff; margin:5px 0; padding:8px 12px; border-radius:4px; box-s
 <p><b>Last Logged Roll Number:</b> <span id="roll"></span></p>
 
 <button id="codeBtn" onclick="generateCode()">Generate 6-Digit Code</button>
-<button onclick="generateQRCode()">Generate QR Code</button>
+<button id="qrBtn" onclick="generateQRCode()">Generate QR Code</button>
 
 <p id="result"></p>
 
