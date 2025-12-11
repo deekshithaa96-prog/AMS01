@@ -40,17 +40,17 @@ onValue(codeRef, (snapshot) => {
 window.submitCode = function(){
     let enteredCode = document.getElementById("studentCode").value;
     get(ref(db,"currentCode")).then(snap=>{
-        if(!snap.exists() || snap.val().code==null){
+        if(!snap.exists() || !snap.val().code){
             document.getElementById("error").innerText="No valid code available or expired";
             return;
         }
         let validCode = snap.val().code.toString();
         if(enteredCode===validCode){
+            set(ref(db,"attendance/"+rollNo),"Present"); // store only if correct
             document.getElementById("message").innerText="Attendance submitted!";
             document.getElementById("error").innerText="";
             document.getElementById("studentCode").disabled=true;
             document.getElementById("submitBtn").disabled=true;
-            set(ref(db,"attendance/"+rollNo),"Present");
         } else {
             document.getElementById("error").innerText="Invalid Code!";
             document.getElementById("message").innerText="";
@@ -79,6 +79,5 @@ button:disabled,input:disabled{ background:#eee; cursor:not-allowed; }
 
 <p id="message"></p>
 <p id="error"></p>
-
 </body>
 </html>
