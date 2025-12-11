@@ -4,7 +4,7 @@
 <title>Teacher Dashboard</title>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -41,13 +41,8 @@ window.generateCode = function(){
     let code = Math.floor(Math.random()*900000)+100000;
     document.getElementById("result").innerText = "6-Digit Code: "+code;
 
-    // Store current code in Firebase
-    set(ref(db,"currentCode"),{
-        code: code,
-        timestamp: Date.now()
-    });
+    set(ref(db,"currentCode"),{ code: code, timestamp: Date.now() });
 
-    // Disable both buttons for 20 seconds
     let codeBtn = document.getElementById("codeBtn");
     let qrBtn = document.getElementById("qrBtn");
     codeBtn.disabled = true;
@@ -65,8 +60,6 @@ window.generateCode = function(){
             qrBtn.disabled = false;
             codeBtn.innerText = (generateCount >= 2)?"Limit Reached":"Generate 6-Digit Code";
             document.getElementById("result").innerText = "Code Expired";
-
-            // Clear current code in Firebase
             set(ref(db,"currentCode"),{ code:null, timestamp:null });
         }
     },1000);
@@ -75,7 +68,7 @@ window.generateCode = function(){
     if(generateCount >= 2) codeBtn.disabled = true;
 }
 
-// Show only students who submitted attendance
+// Load submitted students with Remove button
 function loadSubmittedStudents() {
     const submittedRef = ref(db, "attendance");
     onValue(submittedRef, (snapshot) => {
@@ -92,10 +85,10 @@ function loadSubmittedStudents() {
         snapshot.forEach((childSnapshot) => {
             const studentRoll = childSnapshot.key;
             const status = childSnapshot.val();
-            
+
             if(status === "Present") {
                 const li = document.createElement("li");
-                li.innerText = `${studentRoll} : ${status}`;
+                li.innerHTML = `${studentRoll} : ${status} <button onclick="removeStudent('${studentRoll}')">Remove</button>`;
                 ul.appendChild(li);
                 presentCount++;
             }
@@ -105,6 +98,13 @@ function loadSubmittedStudents() {
             ul.innerHTML = "<li>No students have submitted attendance yet</li>";
         }
     });
+}
+
+// Remove student from attendance
+window.removeStudent = function(studentRoll){
+    if(confirm(`Remove ${studentRoll} from attendance?`)){
+        remove(ref(db,"attendance/"+studentRoll));
+    }
 }
 
 // Demo QR code generation
@@ -121,6 +121,8 @@ button:disabled{ background:#aaa; cursor:not-allowed; }
 #result{ margin-top:15px; font-size:18px; font-weight:bold; color:#222; }
 ul{ list-style:none; padding-left:0; }
 ul li{ background:#fff; margin:5px 0; padding:8px 12px; border-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+ul li button{ margin-left:10px; padding:4px 8px; background:red; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
+ul li button:hover{ background:#ff4d4d; }
 </style>
 </head>
 <body>
