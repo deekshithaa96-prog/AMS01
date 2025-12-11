@@ -31,6 +31,28 @@ document.addEventListener("DOMContentLoaded",()=>{
 // Limit 2 code generations per login
 let generateCount = 0;
 
+// Disable both buttons for 20 seconds
+function disableButtonsFor20Sec(btn) {
+    let codeBtn = document.getElementById("codeBtn");
+    let qrBtn = document.getElementById("qrBtn");
+    codeBtn.disabled = true;
+    qrBtn.disabled = true;
+    let t = 20;
+    btn.innerText = `Wait ${t}s`;
+
+    let interval = setInterval(()=>{
+        t--;
+        btn.innerText = `Wait ${t}s`;
+        if(t <= 0){
+            clearInterval(interval);
+            codeBtn.disabled = false;
+            qrBtn.disabled = false;
+            btn.innerText = (generateCount >= 2 && btn.id==="codeBtn")?"Limit Reached":(btn.id==="codeBtn"?"Generate 6-Digit Code":"Generate QR Code");
+            document.getElementById("result").innerText = btn.id==="codeBtn"?"Code Expired":"QR Code Expired";
+        }
+    },1000);
+}
+
 // Generate 6-digit code
 window.generateCode = function(){
     if(generateCount >= 2){
@@ -41,31 +63,21 @@ window.generateCode = function(){
     let code = Math.floor(Math.random()*900000)+100000;
     document.getElementById("result").innerText = "6-Digit Code: "+code;
 
+    // Store in Firebase
     set(ref(db,"currentCode"),{ code: code, timestamp: Date.now() });
 
-    let codeBtn = document.getElementById("codeBtn");
-    let qrBtn = document.getElementById("qrBtn");
-    codeBtn.disabled = true;
-    qrBtn.disabled = true;
-
-    let t = 20;
-    codeBtn.innerText = `Wait ${t}s`;
-
-    let interval = setInterval(()=>{
-        t--;
-        codeBtn.innerText = `Wait ${t}s`;
-        if(t <= 0){
-            clearInterval(interval);
-            codeBtn.disabled = false;
-            qrBtn.disabled = false;
-            codeBtn.innerText = (generateCount >= 2)?"Limit Reached":"Generate 6-Digit Code";
-            document.getElementById("result").innerText = "Code Expired";
-            set(ref(db,"currentCode"),{ code:null, timestamp:null });
-        }
-    },1000);
+    disableButtonsFor20Sec(document.getElementById("codeBtn"));
 
     generateCount++;
-    if(generateCount >= 2) codeBtn.disabled = true;
+    if(generateCount >= 2) document.getElementById("codeBtn").disabled = true;
+}
+
+// Generate QR code (demo)
+window.generateQRCode = function(){
+    let qrData = "QR-" + Math.floor(Math.random()*1000000);
+    document.getElementById("result").innerText = "QR Code Generated: "+qrData;
+
+    disableButtonsFor20Sec(document.getElementById("qrBtn"));
 }
 
 // Load submitted students with Remove button
@@ -105,12 +117,6 @@ window.removeStudent = function(studentRoll){
     if(confirm(`Remove ${studentRoll} from attendance?`)){
         remove(ref(db,"attendance/"+studentRoll));
     }
-}
-
-// Demo QR code generation
-window.generateQRCode = function(){
-    let qrData = "ATTENDANCE|"+Date.now();
-    document.getElementById("result").innerText = "QR Code Generated (demo): "+qrData;
 }
 </script>
 <style>
