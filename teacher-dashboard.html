@@ -4,7 +4,7 @@
 <title>Teacher Dashboard</title>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDeLqOuca8tge4tOpgD7LKPIFubLew6ljQ",
@@ -78,26 +78,8 @@ window.generateQRCode = function(){
     let qrData = "ATTENDANCE|"+Date.now();
     document.getElementById("result").innerText = "QR Code Generated (demo): "+qrData;
 }
-
 </script>
 <style>
 body{ font-family: Arial; padding:20px; }
-button{ padding:10px 20px; margin:10px 0; border:none; background:black; color:white; cursor:pointer; border-radius:4px; font-size:16px; }
-button:disabled{ background:#aaa; cursor:not-allowed; }
-#result{ margin-top:15px; font-size:18px; font-weight:bold; color:#222; }
-</style>
-</head>
-<body>
-<h2>Welcome Teacher</h2>
-<p><b>Last Logged Roll Number:</b> <span id="roll"></span></p>
-
-<button id="codeBtn" onclick="generateCode()">Generate 6-Digit Code</button>
-<button onclick="generateQRCode()">Generate QR Code</button>
-
-<p id="result"></p>
-
-<h3>Students Submitted Attendance:</h3>
-<ul id="submittedList"></ul>
-
-</body>
-</html>
+button{ padding:10px 20px; margin:10px 0; border:none; background:black; color:white; cursor:pointer; border-radius:4px
+}
